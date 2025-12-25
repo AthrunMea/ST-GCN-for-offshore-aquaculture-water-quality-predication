@@ -1,0 +1,7 @@
+data
+*.csv
+*.xlsx
+*.npy
+*.h5
+*.mat
+*.txt
