@@ -120,16 +120,16 @@ def get_adj_file(input_file, train_ratio=0.3):
 
 import utils.util as util
 if __name__ == "__main__":
-    # util.set_seed(20250523)
-    # seq_length_x = [48]
-    # seq_length_y = 48
-    # ratio = [0.7, 0.1, 0.2]
-    # for i in seq_length_x:
-    #     generate_dataset('data/data.csv', './data/DO_multi_level_{}-{}_step_train{}/'.format(i,seq_length_y, ratio[0]),
-    #                  i, seq_length_y, ratio)
+    util.set_seed(20250523)
+    seq_length_x = [48]
+    seq_length_y = 12
+    ratio = [0.3, 0.1, 0.2]
+    for i in seq_length_x:
+        generate_dataset('data/data.csv', './data/DO_multi_level_{}-{}_step_train{}/'.format(i,seq_length_y, ratio[0]),
+                     i, seq_length_y, ratio)
 
     # generate a sample adj file
-    get_adj_file('data/data.csv', 0.7)
+    # get_adj_file('data/data.csv', 0.7)
     # a=np.load(os.path.join('./data/DO_down_level_6-1_step/test.npz'))['x']
     # print(1)
 

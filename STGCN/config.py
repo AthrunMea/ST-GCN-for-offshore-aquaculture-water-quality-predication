@@ -39,7 +39,7 @@ class OptInit:
         parser.add_argument('--spatial_filters', default=16, type=int, help='number of spatial channels')
 
 
-        parser.add_argument('--train_ratio', default=0.5, type=float, help='training data ratio')
+        parser.add_argument('--train_ratio', default=0.7, type=float, help='training data ratio')
 
         args = parser.parse_args()
         if args.water_level == 'multi':
