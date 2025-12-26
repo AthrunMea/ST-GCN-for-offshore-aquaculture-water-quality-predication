@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
 
 
-def generate_graph_seq2seq_io_data(df, x_offsets, y_offsets):
+def generate_graph_seq2seq_io_data(df, ratio, x_offsets, y_offsets):
     """
     Generate samples from
     :param df:
@@ -19,25 +19,33 @@ def generate_graph_seq2seq_io_data(df, x_offsets, y_offsets):
     # x: (epoch_size, input_length, num_nodes, input_dim)
     # y: (epoch_size, output_length, num_nodes, output_dim)
     """
+
     num_samples, num_nodes = df.shape
     data = np.expand_dims(df.values, axis=-1)
-    x, y = [], []
-    min_t = abs(min(x_offsets))
-    max_t = abs(num_samples - abs(max(y_offsets)))  # Exclusive
-    for t in range(min_t, max_t):  # t is the index of the last observation.
-        one = data[t + x_offsets, ...]
-        x.append(one)
-        # one = data[t + y_offsets, ...]
-        one = data[t + y_offsets, ... ][:,[3,8,13],:]
-        y.append(one)
-    x = np.stack(x, axis=0)
-    y = np.stack(y, axis=0)
-    return x, y
 
+    k = 0
+    data_x = []
+    data_y = []
+    for i in ratio:
+        num_certain = int(num_samples * i)
+        x = []
+        y = []
+        min_t = int(k + abs(min(x_offsets)))
+        max_t = int(abs(k + num_certain - abs(max(y_offsets))))
+        for t in range(min_t, max_t):
+            one = data[t + x_offsets, ...]
+            x.append(one)
+            one = data[t + y_offsets, ...][:, [3, 8, 13], :]
+            y.append(one)
+        x = np.stack(x, axis=0)
+        y = np.stack(y, axis=0)
+        data_x.append(x)
+        data_y.append(y)
+        k += i
+    return data_x, data_y
 
-def generate_dataset(input_file, out_dir, seq_length_x = 24, seq_length_y = 1):
-    df = pd.read_csv(input_file, usecols=[0]+list(np.arange(1, 16)))
-    # df.columns = ['time', 'pH_D', 'turbidity_D', 'salinity_D', 'DO_D', 'temperature_D',]
+def generate_dataset(input_file, out_dir, seq_length_x = 24, seq_length_y = 1, ratio = [0.6, 0.2, 0.2]):
+    df = pd.read_csv(input_file, usecols=[0]+list(np.arange(1, 16)), encoding='gbk')
     df.columns =  ['time', 'pH_U', 'turbidity_U', 'salinity_U', 'DO_U', 'temperature_U',
                    'pH_M', 'turbidity_M', 'salinity_M', 'DO_M', 'temperature_M',
                    'pH_D', 'turbidity_D', 'salinity_D', 'DO_D', 'temperature_D']
@@ -48,30 +56,33 @@ def generate_dataset(input_file, out_dir, seq_length_x = 24, seq_length_y = 1):
         os.mkdir(out_dir)
     x_offsets = np.sort(np.concatenate((np.arange(-(seq_length_x - 1), 1, 1),)))
     y_offsets = np.sort(np.arange(1, (seq_length_y + 1), 1))
-    x, y = generate_graph_seq2seq_io_data(
+    num_samples = df.shape[0]
+
+    train_ratio, val_ratio, test_ratio = ratio
+
+    num_train = int(num_samples * train_ratio)
+    num_val = int(num_samples * val_ratio)
+    num_test = int(num_samples * test_ratio)
+    print("train:{}, val:{}, test:{}".format(num_train, num_val, num_test))
+
+    ratio = [train_ratio, val_ratio, test_ratio]
+
+    data_x, data_y = generate_graph_seq2seq_io_data(
         df,
+        ratio,
         x_offsets=x_offsets,
         y_offsets=y_offsets
     )
-    print("x shape: ", x.shape, ", y shape: ", y.shape)
+
+    # print("x shape: ", x.shape, ", y shape: ", y.shape)
     # per = np.random.permutation(x.shape[0])
     # x = x[per]
     # y = y[per]
-    num_samples = x.shape[0]
-    num_test = round(num_samples * 0.2)
-    num_train = round(num_samples * 0.2)
-    num_val = round(num_samples * 0.2)
-    x_train, y_train = x[:num_train], y[:num_train]
 
-    # per = np.random.permutation(x_train.shape[0])
-    # x_train = x_train[per]
-    # y_train = y_train[per] #只打乱train
+    x_train, y_train = data_x[0], data_y[0]
+    x_val, y_val = data_x[1], data_y[1]
+    x_test, y_test = data_x[2], data_y[2]
 
-    x_val, y_val = (
-        x[num_train: num_train + num_val],
-        y[num_train: num_train + num_val],
-    )
-    x_test, y_test = x[num_train + num_val: num_train + num_val + num_test], y[num_train + num_val: num_train + num_val + num_test]
     for cat in ["train", "val", "test"]:
         _x, _y = locals()["x_" + cat], locals()["y_" + cat]
         print(cat, "x: ", _x.shape, "y:", _y.shape)
@@ -84,15 +95,16 @@ def generate_dataset(input_file, out_dir, seq_length_x = 24, seq_length_y = 1):
         )
 
 
-def get_adj_file(input_file):
-    df = pd.read_csv(input_file, usecols=list(np.arange(1, 6)))
-    df.columns = ['pH_U', 'turbidity_U', 'salinity_U', 'DO_U', 'temperature_U']
-    # df.columns =  [ 'pH_U', 'turbidity_U', 'salinity_U', 'DO_U', 'temperature_U',
-    #                'pH_M', 'turbidity_M', 'salinity_M', 'DO_M', 'temperature_M',
-    #                'pH_D', 'turbidity_D', 'salinity_D', 'DO_D', 'temperature_D']
+def get_adj_file(input_file, train_ratio=0.3):
+    df = pd.read_csv(input_file, usecols=list(np.arange(1, 16)), encoding='gbk')
+    # df.columns = ['pH_U', 'turbidity_U', 'salinity_U', 'DO_U', 'temperature_U']
+    df.columns =  [ 'pH_U', 'turbidity_U', 'salinity_U', 'DO_U', 'temperature_U',
+                   'pH_M', 'turbidity_M', 'salinity_M', 'DO_M', 'temperature_M',
+                   'pH_D', 'turbidity_D', 'salinity_D', 'DO_D', 'temperature_D']
 
-    df_value = df.values
     num_samples, num_nodes = df.shape
+    train_samples = int(num_samples * train_ratio)
+    df_value = df.values[:train_samples,:]
     adj = np.zeros((num_nodes, num_nodes))
     for i in range(num_nodes):
         for j in range(i,num_nodes):
@@ -104,19 +116,20 @@ def get_adj_file(input_file):
     plt.figure(figsize=(12, 12))
     sns.heatmap(adj, annot=True, cmap='coolwarm', fmt=".2f")
     plt.show()
-    # np.save('./data/down_level_var_adj',adj)
+    np.save('./data/multi_level_var_adj_{}'.format(train_ratio),adj) #0.3/0.5/0.7
 
 import utils.util as util
 if __name__ == "__main__":
     # util.set_seed(20250523)
-    seq_length_x = [48]
-    seq_length_y = 24
-    for i in seq_length_x:
-        generate_dataset('data/data.csv', './data/bit_shuffle/DO_multi_level_{}-{}_step/'.format(i,seq_length_y),
-                     i, seq_length_y)
+    # seq_length_x = [48]
+    # seq_length_y = 48
+    # ratio = [0.7, 0.1, 0.2]
+    # for i in seq_length_x:
+    #     generate_dataset('data/data.csv', './data/DO_multi_level_{}-{}_step_train{}/'.format(i,seq_length_y, ratio[0]),
+    #                  i, seq_length_y, ratio)
 
     # generate a sample adj file
-    # get_adj_file('data/data.csv')
+    get_adj_file('data/data.csv', 0.7)
     # a=np.load(os.path.join('./data/DO_down_level_6-1_step/test.npz'))['x']
     # print(1)
 
