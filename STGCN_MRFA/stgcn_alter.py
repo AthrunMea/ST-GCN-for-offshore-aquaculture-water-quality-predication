@@ -78,19 +78,27 @@ class STGCN(nn.Module):
 
         self.last_temporal = TimeBlock(in_channels=out_channels, out_channels=out_channels)
         self.pred_num = pred_num
-        self.fully = nn.Linear((num_timesteps_input - 2 * 5) * out_channels * int(num_nodes / pred_num),
+        self.fully = nn.Linear((num_timesteps_input - 2 * 3) * out_channels * int(num_nodes / pred_num),
                                num_timesteps_output)
+        #(num_timesteps_input - 2 * 5)
 
     def decoder(self, input1, input2, input3):
         out1 = torch.softmax(input2 * input3 / input1.size()[1], dim=1) * input1
         out = torch.cat([input1, out1], 1)
         self.dropout(out)
         return out
+    def forward_features(self, X):
+        X = X.permute(0, 2, 1, 3)
+        out1 = self.block1(X, self.adj)
+        out2 = self.block2(out1, self.adj)
+        out3 = self.last_temporal(out2)
+        # out3: (B, N, T', C)
+        return out3
 
     def forward(self, X):
         X = X.permute(0, 2, 1, 3)
         out1 = self.block1(X, self.adj)
-        out2 = self.block2(out1, self.adj)
+        out2 = out1 #self.block2(out1, self.adj)
         out3 = self.last_temporal(out2)
         out4 = self.fully(out3.reshape((out3.shape[0], self.pred_num, -1)))
         return out4

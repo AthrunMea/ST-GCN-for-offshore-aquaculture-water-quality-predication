@@ -118,9 +118,12 @@ class STGCN(nn.Module):
                                  spatial_channels=spatial_channels, num_nodes=num_nodes,kernel_size=kernel_size)
         self.block2 = STGCNBlock(in_channels=out_channels, out_channels=out_channels,
                                  spatial_channels=spatial_channels, num_nodes=num_nodes,kernel_size=kernel_size)
+        self.block3 = STGCNBlock(in_channels=out_channels, out_channels=out_channels,
+                                 spatial_channels=spatial_channels, num_nodes=num_nodes, kernel_size=kernel_size)
         self.last_temporal = TimeBlock(in_channels=out_channels, out_channels=out_channels,kernel_size=kernel_size)
-        self.fully = nn.Linear((num_timesteps_input - 2 * 5) * out_channels * int(num_nodes/pred_num),
-                               num_timesteps_output)
+        self.fully = nn.Linear((num_timesteps_input - 2 * 7) * out_channels * int(num_nodes/pred_num), num_timesteps_output)
+        #nn.Linear((num_timesteps_input - 2 * 5) * out_channels * int(num_nodes/pred_num),
+                     #          num_timesteps_output)
 
     def forward(self, X):
         """
@@ -131,7 +134,8 @@ class STGCN(nn.Module):
         X = X.permute(0, 2, 1, 3)
         out1 = self.block1(X, self.adj)
         out2 = self.block2(out1, self.adj)
-        out3 = self.last_temporal(out2)
+        out5 = self.block3(out2, self.adj)
+        out3 = self.last_temporal(out5)
         out4 = self.fully(out3.reshape((out3.shape[0], self.pred_num, -1)))
         return out4
 

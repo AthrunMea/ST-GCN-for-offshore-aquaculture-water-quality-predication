@@ -38,7 +38,7 @@ class OptInit:
         parser.add_argument('--n_filters', default=32, type=int, help='number of channels of deep features')
         parser.add_argument('--spatial_filters', default=16, type=int, help='number of spatial channels')
 
-        parser.add_argument('--train_ratio', default=0.3, type=float, help='training data ratio') #0.3/0.5/0.7
+        parser.add_argument('--train_ratio', default=0.7, type=float, help='training data ratio') #0.3/0.5/0.7
 
         args = parser.parse_args()
         if args.water_level == 'multi':
@@ -71,12 +71,12 @@ class OptInit:
         args.pred_para_num = level_number*predict_para_num
         args.device = torch.device('cuda' if not args.use_cpu and torch.cuda.is_available() else 'cpu')
         args.task = args.pred_para_class+'_'+args.water_level+'_level_'+str(args.input_step)+'-'+str(args.pred_step)+'_step'+'_train'+str(args.train_ratio)
-        args.save_dir = os.path.join('./save_model/STGCN_MRFA/', args.task)
+        args.save_dir = os.path.join('./save_model/STGCN_MRFA_block1/', args.task)
         self.args = args
         self._set_seed(self.args.seed)
 
         self.args.writer = SummaryWriter(log_dir=self.args.save_dir + '/log/', comment='comment',
-                                         filename_suffix="_test_your_filename_suffix")
+                                         filename_suffix="_test_MRFA")
         # loss
         self.args.epoch = 0
         self.args.step = -1

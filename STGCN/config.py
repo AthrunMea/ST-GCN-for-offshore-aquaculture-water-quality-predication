@@ -39,7 +39,7 @@ class OptInit:
         parser.add_argument('--spatial_filters', default=16, type=int, help='number of spatial channels')
 
 
-        parser.add_argument('--train_ratio', default=0.7, type=float, help='training data ratio')
+        parser.add_argument('--train_ratio', default=0.3, type=float, help='training data ratio') #0.3/0.5/0.7
 
         args = parser.parse_args()
         if args.water_level == 'multi':
@@ -72,7 +72,7 @@ class OptInit:
         args.pred_para_num = level_number*predict_para_num
         args.device = torch.device('cuda' if not args.use_cpu and torch.cuda.is_available() else 'cpu')
         args.task = args.pred_para_class+'_'+args.water_level+'_level_'+str(args.input_step)+'-'+str(args.pred_step)+'_step'+'_train'+str(args.train_ratio)
-        args.save_dir = os.path.join('./save_model/STGCN/', args.task)
+        args.save_dir = os.path.join('./save_model/STGCN_block3/', args.task)
         self.args = args
         self._set_seed(self.args.seed)
 

@@ -48,7 +48,7 @@ def main(logger):
         print('Best MAE:===>', opt.best_mae)
     if not os.path.exists('./result'):
         os.mkdir('./result')
-    opt.model_name = 'STGCN_MRFA_only'
+    opt.model_name = 'STGCN_MRFA_block1' #model_name
     result_file = './result/{}_{}_{}.txt'.format(opt.model_name,str(opt.input_step),str(opt.pred_step))
     with open(result_file, "w") as file:
         for i in range(len(opt.best_score)):
